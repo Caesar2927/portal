@@ -12,6 +12,8 @@ mongoose.connect(db_link)
   });
 
 // Define the slot schema
+
+
 const slotSchema = new mongoose.Schema({
   slot1: { type: Boolean, default: false },
   slot2: { type: Boolean, default: false },
@@ -28,6 +30,7 @@ const daySchema = new mongoose.Schema({
 // Define the equipment schema
 const equipmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
+  adminName:{type:String,required:true},
   days: [daySchema]
 });
 
@@ -41,11 +44,43 @@ const departmentSchema = new mongoose.Schema({
 const Department = mongoose.model('Department', departmentSchema);
 
 
+const requestSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  date: { type: Date, required: true },
+  slot: { type: String, required: true }
+});
+
+const equipment=new mongoose.Schema({
+    name:{type:String,required:true},
+    request:[requestSchema]
+})
+
+
+const adminSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  department: { type: String},
+  equipment:[equipment]
+});
+
+const Admin = mongoose.model('Admin', adminSchema);
+
+
 
 
 
 async function createElectricalDepartment() {
   try {
+    const adminName = 'adminA';
+    const departmentName = 'Electrical';
+
+    // Find the admin
+    const admin = await Admin.findOne({ name: adminName });
+    if (!admin) {
+      throw new Error(`Admin with name ${adminName} not found`);
+    }
+
     // Get tomorrow's date
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -69,24 +104,38 @@ async function createElectricalDepartment() {
 
     // Create the department data
     const departmentData = {
-      name: 'Mechnical',
+      name: departmentName,
       equipments: [
         {
-          name: 'Lathe',
+          name: '3-D Printer',
+          adminName: admin.name,
           days
         }
       ]
     };
 
+    admin.equipment.push({
+      name:"3-D Printer",
+    });
+
+
     // Create a new department
     const newDepartment = new Department(departmentData);
     const savedDepartment = await newDepartment.save();
+
+    // Update the admin's department field
+    admin.department = departmentName;
+    await admin.save();
+
     console.log('Electrical department created:', savedDepartment);
+    console.log(`Admin ${adminName} updated with department ${departmentName}`);
   } catch (error) {
     console.error('Error creating electrical department:', error);
   } finally {
     // Close the database connection
-    mongoose.connection.close();
+    mongoose.connection.close()
+      .then(() => console.log("DB connection closed"))
+      .catch(err => console.error('Error closing DB connection:', err));
   }
 }
-
+createElectricalDepartment();
