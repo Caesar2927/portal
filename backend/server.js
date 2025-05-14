@@ -22,12 +22,12 @@ mongoose.connect(db_link)
   });
 
 
-// Middleware to parse JSON
+
 app.use(express.json());
 
 
 app.use(cors());
-// Middleware to parse URL-encoded bodies
+
 app.use(express.urlencoded({ extended: true }));
 
 
@@ -42,26 +42,26 @@ const slotSchema = new mongoose.Schema({
   slot4: { type: Boolean, default: false }
 });
 
-// Define the day schema
+
 const daySchema = new mongoose.Schema({
   date: { type: Date, required: true },
   slots: slotSchema
 });
 
-// Define the equipment schema
+
 const equipmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
   adminName:{type:String,required:true},
   days: [daySchema]
 });
 
-// Define the department schema
+
 const departmentSchema = new mongoose.Schema({
   name: { type: String, required: true },
   equipments: [equipmentSchema]
 });
 
-// Create and export the department model
+
 const Department = mongoose.model('Department', departmentSchema);
 
 
@@ -69,7 +69,7 @@ const Department = mongoose.model('Department', departmentSchema);
 
 
 
-//  making  request schema 
+ 
 
 const requestSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -100,26 +100,25 @@ app.use('/admin', adminRouter);
 
 
 
-// Login route
+
 adminRouter.post('/login', async (req, res) => {
   const {  password, email,department } = req.body;
   console.log( password, email,department);
   try {
-    // Find user by username or email
+   
     const admin = await Admin.findOne( {email: email  });
     if (!admin) {
       console.log("admin not present");
       return res.status(400).json({ message: 'Invalid username/email or password' });
     }
 
-    // Check password
+    
     const validPassword = await bcrypt.compare(password, admin.password);
     if (!validPassword) {
       console.log("password is wrong");
       return res.status(400).json({ message: 'Invalid username/email or password' });
     }
 
-    // Generate JWT token
     const token = jwt.sign({ id: admin._id }, process.env.JWT_SECRET || 'your_secret_key', { expiresIn: '1h' });
 
     res.status(200).json({ message: 'Login successful', token });
@@ -130,22 +129,21 @@ adminRouter.post('/login', async (req, res) => {
   }
 });
 
-// Register route
+
 adminRouter.post('/register', async (req, res) => {
   const { username, password, email } = req.body;
   console.log(username, password, email);
   try {
-    // Check if user already exists by username or email
+   
     let user = await Admin.findOne({ $or: [{ name: username }, { email }] });
     if (user) {
       return res.status(400).json({ message: 'User with this username or email already exists' });
     }
 
-    // Hash password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create new user
+
     const admin = new Admin({
       name: username,
       email:email,
